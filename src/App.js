@@ -142,7 +142,7 @@ class App extends React.Component {
 
             <Grid item xs={12} sx={{ paddingBottom: '1rem' }}>
               <Typography variant="subtitle2" gutterBottom component="div">
-                35 bình luận
+                {post.comments.length} bình luận
               </Typography>
             </Grid>
 
