@@ -1,15 +1,12 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
+import { DataGrid } from '@mui/x-data-grid';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
 import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import TextField from '@mui/material/TextField';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import './App.css';
 
 
@@ -18,227 +15,203 @@ class App extends React.Component {
     super(props);
 
     this.state = {
-      user: { id: 1, name: 'nguyen dat', },
+      users: [],
+      Sort: '',
+      Filter: '',
+      usersFilter: null,
+    }
 
-      post: {
-        author: 'nguyen dat',
-        title: 'con meo con',
-        content: 'bai tap hom nay',
-        comments: [
-          { id: 1, author: 'Nam', content: 'lorem ipsum' },
-          { id: 2, author: 'Đức', content: 'lorem ipsum2' },
-        ],
-      },
-
-      isOpenEditCommnet: false,
-      commentEdit: null,
-      isLike: false,
-      inputSendCommnet: '',
-    };
-
-    this.refInputEditComment = React.createRef();
   };
 
-  /********handle toggle like post********/
-  handleTogglelikePost = () => {
-    this.setState({ isLike: !this.state.isLike });
+  columns = [
+    { field: 'id', },
+    { field: 'name', headerName: 'Name', flex: 1, minWidth: 200 },
+    { field: 'address', headerName: 'Address', flex: 1, minWidth: 200 },
+    { field: 'phone', headerName: 'Phone', flex: 1, minWidth: 200 },
+    { field: 'email', headerName: 'Email', flex: 1, minWidth: 200 },
+    { field: 'website', headerName: 'Website', flex: 1, minWidth: 200 },
+    { field: 'company', headerName: 'Company', flex: 1, minWidth: 200 },
+  ];
+
+
+  /*********api config******/
+  ApiUsers = async (url = '') => {
+    const baseURL = 'https://jsonplaceholder.typicode.com/users';
+    const response = await fetch(baseURL + url);
+    return response.json();
   }
 
-  /********handle change input send comment********/
-  handleChangeInputSendComment = (e) => {
-    const InputSendComment = e.target.value;
-    this.setState({ inputSendCommnet: InputSendComment });
-  }
+  /*********get users******/
+  GetUsers = async () => {
+    try {
+      const res = await this.ApiUsers();
+      const newusers = res.map(item => {
+        return {
+          'id': '_' + Math.random().toString(36).substr(2, 9),
+          'name': item.name,
+          'address': `${item.address.suite} ${item.address.street} ${item.address.city}`,
+          'phone': item.phone,
+          'email': item.email,
+          'website': item.website,
+          'company': item.company.name,
+        };
+      });
 
-  /********handle send comment********/
-  handleSendComment = () => {
-    const { inputSendCommnet, user } = this.state;
-    // check input empty
-    if (inputSendCommnet === '') {
-      return
+      this.setState({ users: newusers });
+      console.log(this.state.users)
+    } catch (error) {
+      console.log('error', error);
+    };
+  };
+
+  /*********hanlde sort user******/
+  handleSortUsers = (Sort = '') => {
+    const { users,usersFilter,Filter } = this.state;
+    let newUsers;
+
+    if(Filter !== ''){
+      newUsers = [...usersFilter];
+    }else{
+      newUsers = [...users];
     }
-    // good 
-    const post = this.state.post;
-    const id = Math.floor(Math.random() * 1000);
-    const newComment = { id: id, author: user.name, content: inputSendCommnet };
-    const newComments = [...post.comments, newComment];
+  
+    switch (Sort) {
+      case 'company':
+        newUsers = [...newUsers].sort(function (a, b) {
+          return ('' + a.company).localeCompare(b.company);
+        })
 
-    const newPost = { ...post, comments: newComments };
+        if(Filter !== ''){
+          this.setState({ usersFilter: newUsers });
+        }else{
+             this.setState({ users: newUsers });
+        }
+        break;
 
-    this.setState({ post: newPost, inputSendCommnet: '' });
-  }
+      default:
+        newUsers = [...newUsers].sort(function (a, b) {
+          return ('' + a.name).localeCompare(b.name);
+        })
 
-  /********handle edit comment********/
-  handleEditComment = (text) => {
-    const { commentEdit, post } = this.state;
+        if(Filter !== ''){
+          this.setState({ usersFilter: newUsers });
+        }else{
+             this.setState({ users: newUsers });
+        }
+        break;
+    }
+  };
 
-    const newComments = post.comments.map(item => {
-      if (item.id === commentEdit.id) {
-        item.content = text;
-      }
-      return item;
-    });
-    const newPost = { ...post, comments: newComments };
+  /*********hanlde change sort******/
+  handleChangeSort = (event) => {
+    this.setState({ Sort: event.target.value });
+    this.handleSortUsers(event.target.value);
+  };
 
-    this.setState({ post: newPost, isOpenEditCommnet: false });
-  }
+  /*********hanlde change filter******/
+  handleChangeFilter = (event) => {
+    this.setState({ Filter: event.target.value });
+    this.handleFilterUsers(event.target.value);
+  };
+  /*********hanlde filter user******/
+  handleFilterUsers = (Filter = '') => {
+    const { users } = this.state;
+    let filterUser = [];
+    switch (Filter) {
+      case 'get 3 rows last':
+        for (let index = users.length - 3; index < users.length; index++) {
+          const element = users[index];
+          filterUser = [...filterUser, element];
+        }
+        console.log('get 3 rows last', filterUser);
+        this.setState({ usersFilter: filterUser });
+        break;
 
-  /********handle delete comment********/
-  handleDeleteComment = (id) => {
-    const post = this.state.post;
-    const newComments = post.comments.filter(item => item.id !== id);
-    const newPost = { ...post, comments: newComments };
+      case 'filter address have Suite':
+        filterUser = [...users].filter(item => item.address.includes('Suite'))
+        console.log('filter address have Suite', filterUser);
+        this.setState({ usersFilter: filterUser });
+        break;
 
-    this.setState({ post: newPost });
-  }
+      case 'filter address have Apt':
+        filterUser = [...users].filter(item => item.address.includes('Apt'))
+        console.log('filter address have Suite', filterUser);
+        this.setState({ usersFilter: filterUser });
+        break;
 
-  /********handle open edit********/
-  handleOpenEditCommnet = (boolean, idEdit = null) => {
-    const post = this.state.post;
-    const filterComment = post.comments.filter(item => item.id === idEdit);
-    const commentEdit = { ...filterComment[0] };
-    console.log("commentEdit", commentEdit);
+      default:
 
-    this.setState({ isOpenEditCommnet: boolean, commentEdit: commentEdit });
+        break;
+    }
+  };
+
+  componentDidMount() {
+    this.GetUsers();
   }
 
   render() {
-    const { post, isLike, user, inputSendCommnet, isOpenEditCommnet, commentEdit } = this.state
+    const { Sort, Filter, users, usersFilter } = this.state;
+
     return (
       <Box
         component="div"
         sx={{
-          width: '50%',
-          minHeight: 300,
+          width: '100%',
           margin: '50px auto',
+          display: 'flex',
+          height: 500,
         }}
       >
-        <Container maxWidth="lg">
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Typography variant="h4" gutterBottom component="div">
-                {post.title}
-              </Typography>
-              <Typography variant="subtitle2" gutterBottom component="div">
-                {post.author}
-              </Typography>
+        <Container maxWidth="lg" sx={{ flexGrow: 1, height: '100%' }}>
+          <Grid container spacing={2} justifyContent="space-between">
+            <Grid item xs={3}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-simple-select-label">Sắp xếp</InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={Sort}
+                  label="Sắp xếp"
+                  onChange={this.handleChangeSort}
+                >
+                  <MenuItem value={'company'}>Sắp xếp theo công ty A-Z</MenuItem>
+                  <MenuItem value={''}>Sắp xếp theo tên A-Z</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={3}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-simple-select-label">Lọc</InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={Filter}
+                  label="Lọc"
+                  onChange={this.handleChangeFilter}
+                >
+                  <MenuItem value={''}>Tất cả</MenuItem>
+                  <MenuItem value={'filter address have Suite'}>Lọc địa chỉ có Suite</MenuItem>
+                  <MenuItem value={'filter address have Apt'}>Lọc địa chỉ có Apt</MenuItem>
+                  <MenuItem value={'get 3 rows last'}>Lấy 3 hàng cuối</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
 
             <Grid item xs={12}>
-              <Typography variant="body1" gutterBottom>
-                {post.content}
-              </Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Button
-                sx={{ color: `${isLike ? 'cornflowerblue' : 'gray'}` }}
-                startIcon={<ThumbUpIcon />}
-                onClick={() => this.handleTogglelikePost()}
-              >
-                Thích
-              </Button>
-            </Grid>
-
-            <Grid item xs={12} sx={{ paddingBottom: '1rem' }}>
-              <Typography variant="subtitle2" gutterBottom component="div">
-                {post.comments.length} bình luận
-              </Typography>
-            </Grid>
-
-            {
-              post.comments.map((item, index) => {
-
-                return <Grid
-                  key={index}
-                  item xs={12}
-                  sx={{ paddingTop: '0px !important', paddingLeft: '2rem !important' }}>
-                  <Typography variant="subtitle2" gutterBottom component="div">
-                    {item.author}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    {item.content}
-                  </Typography>
-                  {
-                    user.name === item.author ?
-                      <Grid
-                        container
-                        spacing={1}
-                        justifyContent="flex-end"
-                      >
-                        <Button
-                          color='primary'
-                          size="small"
-                          onClick={() => this.handleOpenEditCommnet(true, item.id)}>
-                          Sửa
-                        </Button>
-                        <Button
-                          color='primary'
-                          size="small"
-                          onClick={() => this.handleDeleteComment(item.id)}
-                        >
-                          Xóa
-                        </Button>
-                      </Grid>
-                      : ''
-                  }
-                </Grid>
-              })
-            }
-
-            <Grid item xs={12} mt={2}>
-              <TextField
-                id="outlined-multiline-static"
-                label="Bình luận"
-                fullWidth
-                multiline
-                rows={1}
-                value={inputSendCommnet}
-                onChange={this.handleChangeInputSendComment}
-              />
-              <Button
-                variant='contained'
-                color='primary'
-                sx={{
-                  marginTop: 2,
-                }}
-                onClick={this.handleSendComment}
-              >
-                Gửi
-              </Button>
-            </Grid>
-          </Grid>
-
-          <Dialog
-            open={isOpenEditCommnet}
-            onClose={() => this.handleOpenEditCommnet(false)}
-          >
-            <DialogTitle>Sửa bình luận</DialogTitle>
-            <DialogContent>
-              <div
-                style={{
-                  width: 500,
-                  marginTop: '10px',
-                  paddingTop: '10px',
-                }}
-              >
-                <TextField
-                  id="outlined-multiline-static"
-                  label="Bình luận"
-                  fullWidth
-                  multiline
-                  rows={2}
-                  ref={this.refInputEditComment}
-                  defaultValue={commentEdit ? commentEdit.content : ''}
-                />
+              <div style={{ height: 400, width: '100%' }}>
+                <div style={{ display: 'flex', height: '100%' }}>
+                  <div style={{ flexGrow: 1 }}>
+                    <DataGrid
+                      columns={this.columns}
+                      rows={Filter !== '' ? usersFilter : users}
+                    />
+                  </div>
+                </div>
               </div>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => this.handleOpenEditCommnet(false)}>hủy</Button>
-              <Button onClick={() => this.handleEditComment(this.refInputEditComment.current.children[1].firstChild.value)}>sửa</Button>
-            </DialogActions>
-          </Dialog>
+            </Grid>
 
+          </Grid>
         </Container>
       </Box>
     );
