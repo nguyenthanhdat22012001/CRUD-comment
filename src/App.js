@@ -7,6 +7,10 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import Grid from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import SearchIcon from '@mui/icons-material/Search';
 import './App.css';
 
 
@@ -19,11 +23,14 @@ class App extends React.Component {
       Sort: '',
       Filter: '',
       usersFilter: null,
+      posts: [],
+      FilterPosts: false,
+      postsFilter: null,
     }
-
+    this.refInputSearch = React.createRef();
   };
 
-  columns = [
+  columnsUsers = [
     { field: 'id', },
     { field: 'name', headerName: 'Name', flex: 1, minWidth: 200 },
     { field: 'address', headerName: 'Address', flex: 1, minWidth: 200 },
@@ -33,10 +40,22 @@ class App extends React.Component {
     { field: 'company', headerName: 'Company', flex: 1, minWidth: 200 },
   ];
 
+  columnsPosts = [
+    { field: 'id', },
+    { field: 'title', headerName: 'Title', flex: 2, minWidth: 200 },
+    { field: 'body', headerName: 'Content', flex: 3, minWidth: 300 },
+    { field: 'username', headerName: 'Username', flex: 1, minWidth: 150 },
+  ];
 
-  /*********api config******/
-  ApiUsers = async (url = '') => {
+
+  /*********api******/
+  ApiGetUsers = async (url = '') => {
     const baseURL = 'https://jsonplaceholder.typicode.com/users';
+    const response = await fetch(baseURL + url);
+    return response.json();
+  }
+  ApiGetPosts = async (url = '') => {
+    const baseURL = 'https://jsonplaceholder.typicode.com/posts';
     const response = await fetch(baseURL + url);
     return response.json();
   }
@@ -44,10 +63,10 @@ class App extends React.Component {
   /*********get users******/
   GetUsers = async () => {
     try {
-      const res = await this.ApiUsers();
+      const res = await this.ApiGetUsers();
       const newusers = res.map(item => {
         return {
-          'id': '_' + Math.random().toString(36).substr(2, 9),
+          'id': item.id,
           'name': item.name,
           'address': `${item.address.suite} ${item.address.street} ${item.address.city}`,
           'phone': item.phone,
@@ -58,7 +77,7 @@ class App extends React.Component {
       });
 
       this.setState({ users: newusers });
-      console.log(this.state.users)
+      return true;
     } catch (error) {
       console.log('error', error);
     };
@@ -66,25 +85,25 @@ class App extends React.Component {
 
   /*********hanlde sort user******/
   handleSortUsers = (Sort = '') => {
-    const { users,usersFilter,Filter } = this.state;
+    const { users, usersFilter, Filter } = this.state;
     let newUsers;
 
-    if(Filter !== ''){
+    if (Filter !== '') {
       newUsers = [...usersFilter];
-    }else{
+    } else {
       newUsers = [...users];
     }
-  
+
     switch (Sort) {
       case 'company':
         newUsers = [...newUsers].sort(function (a, b) {
           return ('' + a.company).localeCompare(b.company);
         })
 
-        if(Filter !== ''){
+        if (Filter !== '') {
           this.setState({ usersFilter: newUsers });
-        }else{
-             this.setState({ users: newUsers });
+        } else {
+          this.setState({ users: newUsers });
         }
         break;
 
@@ -93,10 +112,10 @@ class App extends React.Component {
           return ('' + a.name).localeCompare(b.name);
         })
 
-        if(Filter !== ''){
+        if (Filter !== '') {
           this.setState({ usersFilter: newUsers });
-        }else{
-             this.setState({ users: newUsers });
+        } else {
+          this.setState({ users: newUsers });
         }
         break;
     }
@@ -144,13 +163,48 @@ class App extends React.Component {
         break;
     }
   };
+  /*********get posts******/
+  GetPosts = async () => {
+    const { users } = this.state;
+    try {
+      const res = await this.ApiGetPosts();
+      const newPosts = res.map(post => {
+        let user = [...users].find(user => user.id === post.userId);
 
-  componentDidMount() {
-    this.GetUsers();
+        return {
+          'id': post.id,
+          'title': post.title,
+          'body': post.body,
+          'userId': post.userId,
+          'username': user ? user.name : '',
+        };
+      });
+      this.setState({ posts: newPosts });
+      console.log('newPosts', newPosts);
+      return true;
+    } catch (error) {
+      console.log('error', error);
+    };
+  };
+  /*********hanlde filter post******/
+  handleFilterPosts = (text = '') => {
+    if (text === '') return;
+
+    const { posts } = this.state;
+    let filterByTitle =  [...posts].filter(post => post.title.includes(text));
+    let filterByUsername =  [...posts].filter(post => post.username.includes(text));
+    const newPosts = [...filterByTitle,...filterByUsername];
+   console.log('handleFilterPosts',newPosts);
+     this.setState({FilterPosts:true, postsFilter: newPosts });
+  };
+
+  async componentDidMount() {
+    await this.GetUsers();
+    await this.GetPosts();
   }
 
   render() {
-    const { Sort, Filter, users, usersFilter } = this.state;
+    const { Sort, Filter, users, usersFilter, posts ,FilterPosts, postsFilter} = this.state;
 
     return (
       <Box
@@ -164,6 +218,11 @@ class App extends React.Component {
       >
         <Container maxWidth="lg" sx={{ flexGrow: 1, height: '100%' }}>
           <Grid container spacing={2} justifyContent="space-between">
+            <Grid item xs={12}>
+              <Typography variant="h5" gutterBottom component="div">
+                Talbe users
+              </Typography>
+            </Grid>
             <Grid item xs={3}>
               <FormControl fullWidth>
                 <InputLabel id="demo-simple-select-label">Sắp xếp</InputLabel>
@@ -203,8 +262,45 @@ class App extends React.Component {
                 <div style={{ display: 'flex', height: '100%' }}>
                   <div style={{ flexGrow: 1 }}>
                     <DataGrid
-                      columns={this.columns}
+                      columns={this.columnsUsers}
                       rows={Filter !== '' ? usersFilter : users}
+                    />
+                  </div>
+                </div>
+              </div>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="h5" gutterBottom component="div">
+                Talbe posts
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Grid container spacing={2} alignItems="flex-end">
+                <Grid item xs={8}>
+                  <TextField 
+                  fullWidth 
+                  id="filled-basic" 
+                  label="Search" 
+                  variant="standard" 
+                  ref={this.refInputSearch}
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <Button variant="outlined" startIcon={<SearchIcon />} onClick={()=> this.handleFilterPosts(this.refInputSearch.current.children[1].firstChild.value)}>
+                    Search
+                  </Button>
+                </Grid>
+              </Grid>
+            </Grid>
+
+            <Grid item xs={12}>
+              <div style={{ height: 400, width: '100%' }}>
+                <div style={{ display: 'flex', height: '100%' }}>
+                  <div style={{ flexGrow: 1 }}>
+                    <DataGrid
+                      columns={this.columnsPosts}
+                      rows={FilterPosts ? postsFilter : posts}
                     />
                   </div>
                 </div>
