@@ -1,18 +1,9 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import { DataGrid } from '@mui/x-data-grid';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import SearchIcon from '@mui/icons-material/Search';
 import './App.css';
 
+import Posts from './components/Posts';
+import Users from './components/Users';
 
 class App extends React.Component {
   constructor(props) {
@@ -29,23 +20,6 @@ class App extends React.Component {
     }
     this.refInputSearch = React.createRef();
   };
-
-  columnsUsers = [
-    { field: 'id', },
-    { field: 'name', headerName: 'Name', flex: 1, minWidth: 200 },
-    { field: 'address', headerName: 'Address', flex: 1, minWidth: 200 },
-    { field: 'phone', headerName: 'Phone', flex: 1, minWidth: 200 },
-    { field: 'email', headerName: 'Email', flex: 1, minWidth: 200 },
-    { field: 'website', headerName: 'Website', flex: 1, minWidth: 200 },
-    { field: 'company', headerName: 'Company', flex: 1, minWidth: 200 },
-  ];
-
-  columnsPosts = [
-    { field: 'id', },
-    { field: 'title', headerName: 'Title', flex: 2, minWidth: 200 },
-    { field: 'body', headerName: 'Content', flex: 3, minWidth: 300 },
-    { field: 'username', headerName: 'Username', flex: 1, minWidth: 150 },
-  ];
 
 
   /*********api******/
@@ -212,103 +186,18 @@ class App extends React.Component {
         sx={{
           width: '100%',
           margin: '50px auto',
-          display: 'flex',
           height: 500,
         }}
       >
-        <Container maxWidth="lg" sx={{ flexGrow: 1, height: '100%' }}>
-          <Grid container spacing={2} justifyContent="space-between">
-            <Grid item xs={12}>
-              <Typography variant="h5" gutterBottom component="div">
-                Talbe users
-              </Typography>
-            </Grid>
-            <Grid item xs={3}>
-              <FormControl fullWidth>
-                <InputLabel id="demo-simple-select-label">Sắp xếp</InputLabel>
-                <Select
-                  labelId="demo-simple-select-label"
-                  id="demo-simple-select"
-                  value={Sort}
-                  label="Sắp xếp"
-                  onChange={this.handleChangeSort}
-                >
-                  <MenuItem value={'company'}>Sắp xếp theo công ty A-Z</MenuItem>
-                  <MenuItem value={''}>Sắp xếp theo tên A-Z</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+       <Users 
+       Sort={Sort} 
+       Filter={Filter} 
+       users={users} 
+       usersFilter={usersFilter} 
+       handleChangeSort={this.handleChangeSort} 
+       handleChangeFilter={this.handleChangeFilter} />
 
-            <Grid item xs={3}>
-              <FormControl fullWidth>
-                <InputLabel id="demo-simple-select-label">Lọc</InputLabel>
-                <Select
-                  labelId="demo-simple-select-label"
-                  id="demo-simple-select"
-                  value={Filter}
-                  label="Lọc"
-                  onChange={this.handleChangeFilter}
-                >
-                  <MenuItem value={''}>Tất cả</MenuItem>
-                  <MenuItem value={'filter address have Suite'}>Lọc địa chỉ có Suite</MenuItem>
-                  <MenuItem value={'filter address have Apt'}>Lọc địa chỉ có Apt</MenuItem>
-                  <MenuItem value={'get 3 rows last'}>Lấy 3 hàng cuối</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12}>
-              <div style={{ height: 400, width: '100%' }}>
-                <div style={{ display: 'flex', height: '100%' }}>
-                  <div style={{ flexGrow: 1 }}>
-                    <DataGrid
-                      columns={this.columnsUsers}
-                      rows={Filter !== '' ? usersFilter : users}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="h5" gutterBottom component="div">
-                Talbe posts
-              </Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Grid container spacing={2} alignItems="flex-end">
-                <Grid item xs={8}>
-                  <TextField 
-                  fullWidth 
-                  id="filled-basic" 
-                  label="Search" 
-                  variant="standard" 
-                  ref={this.refInputSearch}
-                  />
-                </Grid>
-                <Grid item xs={3}>
-                  <Button variant="outlined" startIcon={<SearchIcon />} onClick={()=> this.handleFilterPosts(this.refInputSearch.current.children[1].firstChild.value)}>
-                    Search
-                  </Button>
-                </Grid>
-              </Grid>
-            </Grid>
-
-            <Grid item xs={12}>
-              <div style={{ height: 400, width: '100%' }}>
-                <div style={{ display: 'flex', height: '100%' }}>
-                  <div style={{ flexGrow: 1 }}>
-                    <DataGrid
-                      columns={this.columnsPosts}
-                      rows={FilterPosts ? postsFilter : posts}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Grid>
-
-          </Grid>
-        </Container>
+       <Posts posts={posts} FilterPosts={FilterPosts} postsFilter={postsFilter} handleFilterPosts={this.handleFilterPosts} />
       </Box>
     );
   }
