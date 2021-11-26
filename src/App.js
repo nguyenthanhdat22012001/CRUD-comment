@@ -1,9 +1,12 @@
 import React from 'react';
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
 import './App.css';
 
 import Posts from './components/Posts';
 import Users from './components/Users';
+import FormAdd from './components/FormAdd';
+import FormEdit from './components/FormEdit';
 
 class App extends React.Component {
   constructor(props) {
@@ -17,10 +20,11 @@ class App extends React.Component {
       posts: [],
       FilterPosts: false,
       postsFilter: null,
+      isEdit: false,
+      editPost: null,
     }
     this.refInputSearch = React.createRef();
   };
-
 
   /*********api******/
   ApiGetUsers = async (url = '') => {
@@ -31,6 +35,38 @@ class App extends React.Component {
   ApiGetPosts = async (url = '') => {
     const baseURL = 'https://jsonplaceholder.typicode.com/posts';
     const response = await fetch(baseURL + url);
+    return response.json();
+  }
+  ApiAddPosts = async (data) => {
+    const baseURL = 'https://jsonplaceholder.typicode.com/posts';
+    const response = await fetch(baseURL, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+    });
+    return response.json();
+  }
+  ApiUpdatePosts = async (id, data) => {
+    const baseURL = 'https://jsonplaceholder.typicode.com/posts/';
+    const response = await fetch(baseURL + id, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+    });
+    return response.json();
+  }
+  ApiDeletePosts = async (id) => {
+    const baseURL = 'https://jsonplaceholder.typicode.com/posts/';
+    const response = await fetch(baseURL + id, {
+      method: 'DELETE',
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+    });
     return response.json();
   }
 
@@ -160,16 +196,51 @@ class App extends React.Component {
       console.log('error', error);
     };
   };
+  /*********add posts******/
+  handleAddPosts = async (data) => {
+    try {
+      await this.ApiAddPosts(data);
+
+    } catch (error) {
+      console.log('error', error);
+    };
+  };
+  /*********update posts******/
+  handleUpdatePost = async (data) => {
+    const { editPost } = this.state;
+    try {
+      await this.ApiUpdatePosts(editPost.id, data);
+
+    } catch (error) {
+      console.log('error', error);
+    };
+  }
+  /*********edit posts******/
+  handleEditPost = (id) => {
+    const { posts } = this.state;
+    const filterPost = [...posts].find(item => item.id === id);
+
+    this.setState({ isEdit: true, editPost: filterPost });
+  }
+  /*********delete posts******/
+  handleDeletePost = async (id) => {
+    try {
+      await this.ApiDeletePosts(id);
+
+    } catch (error) {
+      console.log('error', error);
+    };
+  }
   /*********hanlde filter post******/
   handleFilterPosts = (text = '') => {
     if (text === '') return;
 
     const { posts } = this.state;
-    let filterByTitle =  [...posts].filter(post => post.title.includes(text));
-    let filterByUsername =  [...posts].filter(post => post.username.includes(text));
-    const newPosts = [...filterByTitle,...filterByUsername];
-   console.log('handleFilterPosts',newPosts);
-     this.setState({FilterPosts:true, postsFilter: newPosts });
+    let filterByTitle = [...posts].filter(post => post.title.includes(text));
+    let filterByUsername = [...posts].filter(post => post.username.includes(text));
+    const newPosts = [...filterByTitle, ...filterByUsername];
+    console.log('handleFilterPosts', newPosts);
+    this.setState({ FilterPosts: true, postsFilter: newPosts });
   };
 
   async componentDidMount() {
@@ -178,8 +249,8 @@ class App extends React.Component {
   }
 
   render() {
-    const { Sort, Filter, users, usersFilter, posts ,FilterPosts, postsFilter} = this.state;
-
+    const { users, posts, FilterPosts, postsFilter, editPost, isEdit } = this.state;
+    console.log('app', users);
     return (
       <Box
         component="div"
@@ -189,15 +260,46 @@ class App extends React.Component {
           height: 500,
         }}
       >
-       <Users 
-       Sort={Sort} 
-       Filter={Filter} 
-       users={users} 
-       usersFilter={usersFilter} 
-       handleChangeSort={this.handleChangeSort} 
-       handleChangeFilter={this.handleChangeFilter} />
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Grid container spacing={2} justifyContent="space-around" >
+              <Grid item xs={4}>
+                <FormAdd
+                  users={users}
+                  handleAddPosts={this.handleAddPosts}
+                />
+              </Grid>
+              {
+                isEdit ? <Grid item xs={4}>
+                  <FormEdit
+                    users={users}
+                    handleUpdatePost={this.handleUpdatePost}
+                    editPost={editPost}
+                    isEdit={isEdit}
+                  />
+                </Grid> : ""
+              }
+            </Grid>
+          </Grid>
+          <Grid item xs={12}>
+            <Posts
+              posts={posts}
+              FilterPosts={FilterPosts}
+              postsFilter={postsFilter}
+              handleFilterPosts={this.handleFilterPosts}
+              handleEditPost={this.handleEditPost}
+              handleDeletePost={this.handleDeletePost}
+            />
+          </Grid>
 
-       <Posts posts={posts} FilterPosts={FilterPosts} postsFilter={postsFilter} handleFilterPosts={this.handleFilterPosts} />
+        </Grid>
+        {/* <Users
+          Sort={Sort}
+          Filter={Filter}
+          users={users}
+          usersFilter={usersFilter}
+          handleChangeSort={this.handleChangeSort}
+          handleChangeFilter={this.handleChangeFilter} /> */}
       </Box>
     );
   }

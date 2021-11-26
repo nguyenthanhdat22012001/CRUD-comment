@@ -6,11 +6,22 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import SearchIcon from '@mui/icons-material/Search';
+import IconButton from '@mui/material/IconButton';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+
+import DialogDelete from './DialogDelete';
 
 class Posts extends React.Component {
     constructor(props) {
         super(props);
         this.refInputSearch = React.createRef();
+        this.state = {
+            action: {
+                isDelete: false,
+                post: null,
+            }
+        }
     };
 
     columnsPosts = [
@@ -18,7 +29,46 @@ class Posts extends React.Component {
         { field: 'title', headerName: 'Title', flex: 2, minWidth: 200 },
         { field: 'body', headerName: 'Content', flex: 3, minWidth: 300 },
         { field: 'username', headerName: 'Username', flex: 1, minWidth: 150 },
+        {
+            field: 'id', headerName: '', width: 150,
+            renderCell: (params) => (
+                <strong>
+                    <IconButton aria-label="" color="inherit">
+                        <EditIcon onClick={() => this.props.handleEditPost(params.value)} />
+                    </IconButton>
+                    <IconButton aria-label="" color="inherit">
+                        <DeleteOutlineIcon onClick={() => this.handleOpenDialogDelete(params.value)} />
+                    </IconButton>
+                </strong>
+            ),
+        },
     ];
+    /**********handle open dialog delete*********/
+    handleOpenDialogDelete = (id) => {
+        const posts = this.props.posts;
+        const filterPost = [...posts].find(item => item.id === id);
+        console.log('filterPost', filterPost);
+
+        const action = {
+            isDelete: true,
+            post: filterPost,
+        }
+        this.setState({ action: action });
+    }
+    /**********handle close dialog delete*********/
+    handleCloseDialogDelete = () => {
+        const action = {
+            isDelete: false,
+            post: null,
+        }
+        this.setState({ action: action });
+    }
+    /**********handle close dialog delete and delete post*********/
+    handleCloseDialogDeleteAndDelete = (id) => {
+        this.handleCloseDialogDelete();
+        this.props.handleDeletePost(id);
+    }
+
 
     render() {
         const { posts, FilterPosts, postsFilter } = this.props;
@@ -64,6 +114,11 @@ class Posts extends React.Component {
                     </Grid>
 
                 </Grid>
+                <DialogDelete
+                    action={this.state.action}
+                    handleCloseDialogDelete={this.handleCloseDialogDelete}
+                    handleCloseDialogDeleteAndDelete={this.handleCloseDialogDeleteAndDelete}
+                />
             </Container>
         )
     }
