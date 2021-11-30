@@ -9,6 +9,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { Link } from "react-router-dom";
 
 import DialogDelete from './DialogDelete';
 
@@ -33,9 +34,11 @@ class Posts extends React.Component {
             field: 'id', headerName: '', width: 150,
             renderCell: (params) => (
                 <strong>
-                    <IconButton aria-label="" color="inherit">
-                        <EditIcon onClick={() => this.props.handleEditPost(params.value)} />
-                    </IconButton>
+                    <Link to={`/edit/${params.value}`}>
+                        <IconButton aria-label="" color="inherit">
+                            <EditIcon />
+                        </IconButton>
+                    </Link>
                     <IconButton aria-label="" color="inherit">
                         <DeleteOutlineIcon onClick={() => this.handleOpenDialogDelete(params.value)} />
                     </IconButton>
@@ -47,7 +50,6 @@ class Posts extends React.Component {
     handleOpenDialogDelete = (id) => {
         const posts = this.props.posts;
         const filterPost = [...posts].find(item => item.id === id);
-        console.log('filterPost', filterPost);
 
         const action = {
             isDelete: true,
@@ -68,7 +70,6 @@ class Posts extends React.Component {
         this.handleCloseDialogDelete();
         this.props.handleDeletePost(id);
     }
-
 
     render() {
         const { posts, FilterPosts, postsFilter } = this.props;
@@ -112,7 +113,9 @@ class Posts extends React.Component {
                             </div>
                         </div>
                     </Grid>
-
+                    <Link to="/create">
+                        <Button variant="contained">Add post</Button>
+                    </Link>
                 </Grid>
                 <DialogDelete
                     action={this.state.action}

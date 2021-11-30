@@ -1,10 +1,11 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
+import {
+  BrowserRouter as Router, Switch, Route,
+} from "react-router-dom";
 import './App.css';
 
 import Posts from './components/Posts';
-import Users from './components/Users';
 import FormAdd from './components/FormAdd';
 import FormEdit from './components/FormEdit';
 
@@ -14,14 +15,11 @@ class App extends React.Component {
 
     this.state = {
       users: [],
-      Sort: '',
       Filter: '',
       usersFilter: null,
       posts: [],
       FilterPosts: false,
       postsFilter: null,
-      isEdit: false,
-      editPost: null,
     }
     this.refInputSearch = React.createRef();
   };
@@ -42,27 +40,6 @@ class App extends React.Component {
     const response = await fetch(baseURL, {
       method: 'POST',
       body: JSON.stringify(data),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      },
-    });
-    return response.json();
-  }
-  ApiUpdatePosts = async (id, data) => {
-    const baseURL = 'https://jsonplaceholder.typicode.com/posts/';
-    const response = await fetch(baseURL + id, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      },
-    });
-    return response.json();
-  }
-  ApiDeletePosts = async (id) => {
-    const baseURL = 'https://jsonplaceholder.typicode.com/posts/';
-    const response = await fetch(baseURL + id, {
-      method: 'DELETE',
       headers: {
         'Content-type': 'application/json; charset=UTF-8',
       },
@@ -91,50 +68,6 @@ class App extends React.Component {
     } catch (error) {
       console.log('error', error);
     };
-  };
-
-  /*********hanlde sort user******/
-  handleSortUsers = (Sort = '') => {
-    const { users, usersFilter, Filter } = this.state;
-    let newUsers;
-
-    if (Filter !== '') {
-      newUsers = [...usersFilter];
-    } else {
-      newUsers = [...users];
-    }
-
-    switch (Sort) {
-      case 'company':
-        newUsers = [...newUsers].sort(function (a, b) {
-          return ('' + a.company).localeCompare(b.company);
-        })
-
-        if (Filter !== '') {
-          this.setState({ usersFilter: newUsers });
-        } else {
-          this.setState({ users: newUsers });
-        }
-        break;
-
-      default:
-        newUsers = [...newUsers].sort(function (a, b) {
-          return ('' + a.name).localeCompare(b.name);
-        })
-
-        if (Filter !== '') {
-          this.setState({ usersFilter: newUsers });
-        } else {
-          this.setState({ users: newUsers });
-        }
-        break;
-    }
-  };
-
-  /*********hanlde change sort******/
-  handleChangeSort = (event) => {
-    this.setState({ Sort: event.target.value });
-    this.handleSortUsers(event.target.value);
   };
 
   /*********hanlde change filter******/
@@ -190,7 +123,6 @@ class App extends React.Component {
         };
       });
       this.setState({ posts: newPosts });
-      console.log('newPosts', newPosts);
       return true;
     } catch (error) {
       console.log('error', error);
@@ -198,34 +130,51 @@ class App extends React.Component {
   };
   /*********add posts******/
   handleAddPosts = async (data) => {
+    const { posts, users } = this.state;
     try {
-      await this.ApiAddPosts(data);
-
+      const res = await this.ApiAddPosts(data);
+      const user = [...users].find(user => user.id === res.userId);
+      const newPost = {
+        'id': res.id,
+        'title': res.title,
+        'body': res.body,
+        'userId': res.userId,
+        'username': user ? user.name : '',
+      };
+      this.setState({ posts: [...posts, newPost] });
+      alert('thêm thành công')
     } catch (error) {
       console.log('error', error);
     };
   };
   /*********update posts******/
   handleUpdatePost = async (data) => {
-    const { editPost } = this.state;
+    const { posts,users } = this.state;
+    const user = [...users].find(item => item.id === data.userId);
     try {
-      await this.ApiUpdatePosts(editPost.id, data);
+      const newPost = [...posts].map(item => {
+        if(item.id === data.id){
+          item.title =  data.title;
+          item.body =  data.body;
+          item.userId =  data.userId;
+          item.username =  user.name;
+        }
+        return item;
+      });
+
+      this.setState({ posts: newPost });
+      alert('update thành công');
 
     } catch (error) {
       console.log('error', error);
     };
   }
-  /*********edit posts******/
-  handleEditPost = (id) => {
-    const { posts } = this.state;
-    const filterPost = [...posts].find(item => item.id === id);
-
-    this.setState({ isEdit: true, editPost: filterPost });
-  }
   /*********delete posts******/
   handleDeletePost = async (id) => {
+    const { posts } = this.state;
     try {
-      await this.ApiDeletePosts(id);
+      const newPost = [...posts].filter(item => item.id !== id);
+      this.setState({ posts: newPost });
 
     } catch (error) {
       console.log('error', error);
@@ -249,58 +198,43 @@ class App extends React.Component {
   }
 
   render() {
-    const { users, posts, FilterPosts, postsFilter, editPost, isEdit } = this.state;
-    console.log('app', users);
+    const { users, posts, FilterPosts, postsFilter } = this.state;
     return (
-      <Box
-        component="div"
-        sx={{
-          width: '100%',
-          margin: '50px auto',
-          height: 500,
-        }}
-      >
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Grid container spacing={2} justifyContent="space-around" >
-              <Grid item xs={4}>
-                <FormAdd
-                  users={users}
-                  handleAddPosts={this.handleAddPosts}
-                />
-              </Grid>
-              {
-                isEdit ? <Grid item xs={4}>
-                  <FormEdit
-                    users={users}
-                    handleUpdatePost={this.handleUpdatePost}
-                    editPost={editPost}
-                    isEdit={isEdit}
-                  />
-                </Grid> : ""
-              }
-            </Grid>
-          </Grid>
-          <Grid item xs={12}>
-            <Posts
-              posts={posts}
-              FilterPosts={FilterPosts}
-              postsFilter={postsFilter}
-              handleFilterPosts={this.handleFilterPosts}
-              handleEditPost={this.handleEditPost}
-              handleDeletePost={this.handleDeletePost}
-            />
-          </Grid>
-
-        </Grid>
-        {/* <Users
-          Sort={Sort}
-          Filter={Filter}
-          users={users}
-          usersFilter={usersFilter}
-          handleChangeSort={this.handleChangeSort}
-          handleChangeFilter={this.handleChangeFilter} /> */}
-      </Box>
+      <Router>
+        <Box
+          component="div"
+          sx={{
+            width: '70%',
+            margin: '50px auto',
+            height: 500,
+          }}
+        >
+          <Switch>
+            <Route exact path="/">
+              <Posts
+                posts={posts}
+                FilterPosts={FilterPosts}
+                postsFilter={postsFilter}
+                handleFilterPosts={this.handleFilterPosts}
+                handleDeletePost={this.handleDeletePost}
+              />
+            </Route>
+            <Route exact path="/create">
+              <FormAdd
+                users={users}
+                handleAddPosts={this.handleAddPosts}
+              />
+            </Route>
+            <Route exact path="/edit/:id">
+              <FormEdit
+                users={users}
+                posts={posts}
+                handleUpdatePost={this.handleUpdatePost}
+              />
+            </Route>
+          </Switch>
+        </Box>
+      </Router>
     );
   }
 }
